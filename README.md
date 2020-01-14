@@ -1,7 +1,7 @@
 # ConcreteManifolds
 The intention behind this document is to provide an extended and comprehensive example of a smooth manifold for dumbasses 
 like me who can't always grok the heavily abstract without a more concrete example, or as the OO framework types would say,
-a reification. The extended example is the prototypical/canonical stereographic projection considering the sphere $S^2$ as a manifold. 
+a reification. The extended example is the prototypical/canonical stereographic projection considering the sphere S<sup>2</sup> as a manifold. 
 Examples cover deriving the charts, finding the inverses functions between manifolds including deriving an ellipsoid stereographic manifold, 
 and tangent spaces including both equivalence classes of curves and derivation based approaches, illustrating proofs of vector space closure
 and change of basis of tangent vectors. The examples are based on using the open source [SageMath](https://www.sagemath.org/) Computer Algebra System (CAS)
