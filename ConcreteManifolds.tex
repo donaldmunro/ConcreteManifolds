@@ -1,0 +1,893 @@
+\documentclass[11pt]{article}
+
+\input{preamble.tex}
+
+\begin{document}
+    
+    % \maketitle
+    
+    \hypertarget{smooth-manifolds-made-concrete-for-dumbasses}{%
+\section{Smooth Manifolds made Concrete for Dumbasses}\label{smooth-manifolds-made-concrete-for-dumbasses}}
+
+The intention behind this document is to provide an extended and comprehensive example of a smooth
+manifold for dumbasses like me who can't always grok the heavily abstract without a more concrete
+example, or as the OO framework types would say, a reification. The extended example is the
+prototypical/canonical stereographic projection considering the sphere \(S^2\) as a manifold.
+Examples cover deriving the charts, finding the inverses functions between manifolds including
+deriving an ellipsoid stereographic manifold, and tangent spaces including both equivalence classes
+of curves and derivation based approaches, illustrating proofs of vector space closure and change
+of basis of tangent vectors. The examples are based on using the open source
+\href{https://www.sagemath.org/}{SageMath} Computer Algebra System (CAS) to create an interactive
+notebook. Sage is available on most Linux distributions and the web site also has a Windows
+installer. The notebook has also been converted to a Latex/SageTex document which hides most of
+the Sage specific manipulation and shows just the mathematics for those who aren't interested in
+Sage (although you lose the ability to interact with the content including the graphs).
+Note Sage does have 
+\href{http://doc.sagemath.org/html/en/reference/manifolds/sage/manifolds/differentiable/manifold.html}{built in Manifold}
+support, but this document won't be using it as the intention is to provide examples from first principles.
+Errors or misunderstandings on my part or also more than likely as I am a computer scientist who dabbles in mathematics,
+for Computer Vision, Machine Learning and Neural Networks, therefore any error corrections or suggestions 
+for improvements would also be welcome.
+
+\begin{sagesilent}
+clear_vars()
+
+def stereographic(pole):
+    o_n = vector(SR, pole)
+    var('x', 'y', 'z', 'u', 'v', 'l')
+    assume(x, 'real', y, 'real', z, 'real', u, 'real', v, 'real', l, 'real')
+#     p = vector(SR, (x, y, sqrt(x^2 + y^2)))
+    p = vector(SR, (x, y, z))
+    s = vector(SR, (u, v, 0))
+    lhs = o_n - p
+    rhs = l*(o_n - s)
+    eq1 = lhs[0] == rhs[0]
+    eq2 = lhs[1] == rhs[1]
+    eq3 = lhs[2] == rhs[2]
+    l_s = solve(eq3, l)[0].rhs()
+    return (solve(eq1.substitute(l=l_s), u)[0], solve(eq2.substitute(l=l_s), v)[0])
+
+def the_solution(sols, submap):
+    for sol in sols:
+        if sol.rhs().substitute(submap) != 0:
+            return sol
+    return None
+
+o_n = vector(SR, (0,0,1))
+var('x', 'y', 'z', 'u', 'v', 'l')
+assume(x, 'real', y, 'real', z, 'real', u, 'real', v, 'real', l, 'real')
+p = vector(SR, (x, y, z))
+s = vector(SR, (u, v, 0))
+lhs = o_n - p
+rhs = l*(o_n - s)
+eq1 = lhs[0] == rhs[0]
+eq2 = lhs[1] == rhs[1]
+eq3 = lhs[2] == rhs[2]   
+\end{sagesilent}
+
+\hypertarget{the-stereographic-projection-atlas}{%
+\subsection{The Stereographic Projection
+Atlas}\label{the-stereographic-projection-atlas}}
+
+The sterographic projection is the canonical example for a
+topological/smooth manifold. The example shown here will map \(S^2\) to
+\(R^2\), although it can be extended to \(S^n \rightarrow R^n\).
+
+The sphere \(S^2\) is seen as a manifold having an atlas with two open
+sets and associated charts. The first chart is defined on the open set
+defined by the full sphere excluding the north (top) pole \((0,0,1)\),
+while the second chart is defined on a set that excludes only the south
+(bottom) \((0,0,1)\) pole. Both charts project a point on the sphere
+surface to the plane at \(z=0\) by extending a line from the excluded
+pole through the point on the manifold (sphere) being charted onto the
+plane.
+
+To derive the chart equation let \(\vec{o_n} = (0, 0, 1)\),
+\(\vec{p_n} = (x, y, z)\) be a point on the sphere and
+\(\vec{s_n} = (u, v, 0)\) be the projection then (see the figure below):
+
+\(\vec{o_n} - \vec{p_n} = l(\vec{o_n} - \vec{s_n}\))
+which evaluates to: $\sage{lhs} = \sage{rhs}$
+    
+    Solving for the third component of the vector equation and substituting
+into the first two:
+
+\begin{sagesilent}
+sol1 = solve(eq3, l)[0]
+sol2 = solve(eq1, u)[0], solve(eq2, v)[0]
+\end{sagesilent}
+\begin{align*} 
+    \sage{sol1} \\
+    \sage{sol2}
+\end{align*}    
+    
+\begin{sagesilent}
+On = (0, 0, 1)
+Os = (0, 0, -1)
+Cn = stereographic(On)
+Cs = stereographic(Os)
+cn_0 = Cn[0].rhs()
+cn_1 = Cn[1].rhs()
+cs_0 = Cs[0].rhs()
+cs_1 = Cs[1].rhs()
+\end{sagesilent}
+
+    \(\therefore\) the charts with chart coordinates given by \(u\) and \(v\) are given by.
+
+North pole:\\
+
+$(\sage{cn_0}, \sage{cn_1})$    
+    
+    South pole:\\
+
+    $(\sage{cn_0}, \sage{cn_1})$    
+    
+    \hypertarget{visualization}{%
+\subsection{Visualization}\label{visualization}}
+
+To visualize the manifold and charts see Figure \ref{fig:stereo1} which demonstrates manifold points
+\((\frac{1}{2}, \frac{1}{2},\frac{1}{\sqrt{2}})\) and \((\frac{1}{2}, \frac{1}{2},-\frac{1}{\sqrt{2}})\) 
+projected to the plane z = 0 (it does look a lot better in the original Jupyter notebook):
+
+\begin{sagesilent}
+from sage.plot.plot3d.shapes2 import Line
+def to_float(v): # Temp fix to convert to float from Sage type (see https://trac.sagemath.org/ticket/28949) for Sage 9
+    vv = [None] * len(v)
+    for i in range(0, len(v)):
+        vv[i] = float(v[i])
+    return vv    
+twosq = 1/1.4142
+Pn = (0.5, 0.5, twosq)
+Ps = (0.5, 0.5, -twosq)
+Sn = sphere(center=(0, 0, 0),size=1, color='green', aspect_ratio=[1,1,1], opacity=5/10)
+Fn = plot3d(lambda x, y: 0, (-2,2), (-2,2))
+on = point(On, rgbcolor=(1,0,0), size=20)
+os = point(Os, rgbcolor=(0,0,0), size=20)
+pn = point(Pn, rgbcolor=(1,0,0), size=20)
+tpn = text3d('  (%.2f,%.2f,%.2f)'%(Pn[0], Pn[1], Pn[2]), (Pn[0], Pn[1], Pn[2]+0.2), horizontal_alignment='left',color='red', fonsize='x-small')
+ps = point(Ps, rgbcolor=(0,0,0), size=20)
+tps = text3d('  (%.2f,%.2f,%.2f)'%(Ps[0], Ps[1], Ps[2]), (Ps[0], Ps[1], Ps[2]-0.2), horizontal_alignment='left',color='black', fonsize='x-small')
+Bn = (Cn[0].substitute({x:Pn[0], z:Pn[2]}).rhs(), Cn[1].substitute({y:Pn[1], z:Pn[2]}).rhs(), 0)
+bn = point(Bn, rgbcolor=(0,0,0), size=20)
+tbn = text3d('  (%.2f,%.2f)'%(Bn[0], Bn[1]), (Bn[0], Bn[1]+0.6, 0.2), horizontal_alignment='left',color='red', fonsize='x-small')
+Bs = (Cs[0].substitute({x:Ps[0], z:Ps[2]}).rhs(), Cs[1].substitute({y:Ps[1], z:Ps[2]}).rhs(), 0)
+bs = point(Bs, rgbcolor=(0,0,0), size=20)
+#Ln = Line([On, Pn, Bn], color='red')
+#Ls = Line([Os, Ps, Bs], color='black')
+Ln = Line([to_float(On), to_float(Pn), to_float(Bn)], color='red')
+Ls = Line([to_float(Os), to_float(Ps), to_float(Bs)], color='black')
+#show(Sn+Fn+on+pn+tpn+bn+tbn+os+ps+tps+bs+Ln+Ls, figsize=8)
+save(Sn+Fn+on+pn+tpn+bn+tbn+os+ps+tps+bs+Line([On, Pn, Bn], color='red')+Line([Os, Ps, Bs], color='black'), "stereo1.png")
+\end{sagesilent}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\textwidth,keepaspectratio]{stereo1.png}
+    \caption{Visualization of stereographic projection.}
+    \label{fig:stereo1}
+ \end{figure}
+ 
+    \hypertarget{chart-inverses}{%
+\subsection{Chart Inverses}\label{chart-inverses}}
+\begin{sagesilent}
+var('x', 'y', 'z', 'u', 'v', 'l')
+assume(x, 'real', y, 'real', z, 'real', u, 'real', v, 'real', l, 'real')
+o_n = vector(SR, On)
+uv = vector(SR, (u, v, 0))
+d = (o_n - uv).normalized()
+Ln = o_n + d*l
+\end{sagesilent}
+
+The above charts are bijective and continuous within the domain
+\(S^2 - (0, 0, 1), S^2 - (0, 0, -1)\) and codomain \((u, v) \in R^2\),
+however to be valid charts they must also be bicontinuous, ie the
+inverse must be continuous too, that is they must be homeomorphic to
+\(R^2\).
+
+To find the inverse first find the unit vector in the direction of the
+line joining the pole to the projected coordinates, for example
+\(\vec{d} = \frac{((0, 0, 1) - (u, v, 0))}{|(0, 0, 1) - (u, v, 0))|}\) = $\sage{d}$.
+        
+    Now express the line from the pole to the projection as a vector
+equation:\\ 
+\((0, 0, 1) + l \vec{d}\) = $\sage{Ln}$
+
+\begin{sagesilent}
+c_o = vector(SR, (0, 0, 0))
+eq4 = (Ln - c_o).dot_product(Ln - c_o) == 1
+sols = solve(eq4, l)
+solution = the_solution(sols, {u:1, v:1})
+In = (Ln - c_o).substitute(l=solution.rhs())
+pretty_print(In)
+cn_ix = In[0]
+cn_iy = In[1]
+cn_iz = In[2]
+\end{sagesilent}
+    
+    The intersection of this line with the sphere occurs where
+\(|(0, 0, 1) + l\vec{d} - (0, 0, 0)| = 1\), or more generally
+\(|(0, 0, 1) + l\vec{d} - \vec{c}| = r\) where \(\vec{c}\) is the sphere
+centre and r is the radius. This can also be expressed as
+\([(0, 0, 1) + l\vec{d} - (0, 0, 0)] \cdot [(0, 0, 1) + l\vec{d} - (0, 0, 0)] = r\):\\
+$\sage{eq4}$
+    
+    This quadratic will have one solution for \(l = 0\) at the pole. The
+other solution will be the required \((x, y, z)\) on the sphere
+manifold. Letting Sage do the PT:\\
+% \begin{tcolorbox}
+% sols = solve(eq4, l)\\
+% \end{tcolorbox}
+$\sage{sols}$
+
+    and substituting the appropriate \(l\) back into the line equation:\\
+ $\sage{In}$   
+    
+    See also the
+\href{https://en.wikipedia.org/wiki/Line\%E2\%80\%93sphere_intersection}{Wikipeadia}
+page on sphere-line intersection (note their notation swops \(\vec{d}\)
+and \(l\) as used in the above).
+
+\begin{sagesilent}
+o_s = vector(SR, Os)
+d = (o_s - uv).normalized()
+Ls = o_s + d*l
+eq5 = (Ls - c_o).dot_product(Ls - c_o) == 1
+sols = solve(eq5, l)
+solution = the_solution(sols, {u:1, v:1})        
+Is = (Ls - c_o).substitute(l=solution.rhs())
+cs_ix = Is[0]
+cs_iy = Is[1]
+cs_iz = Is[2]    
+\end{sagesilent}
+    
+    Similarly the inverse for the south pole chart is given by (it could
+probably also be derived by symmetry):\\
+$\sage{Is}$
+    
+    \hypertarget{verifying-the-charts}{%
+\subsection{Verifying the Charts}\label{verifying-the-charts}}
+\begin{sagesilent}
+    uu = cs_0.substitute({x: cn_ix, z: cn_iz}).full_simplify()
+    vv = cs_1.substitute({y: cn_iy, z: cn_iz}).full_simplify()
+    pretty_print("(", uu, ", ", vv, ")")    
+\end{sagesilent}
+
+    The two charts described above are homeomorphic and are also
+differentiable with a differentiable inverse, therefore they are
+diffeomorphic too. Assume the charts are named \(c_n\) and \(c_s\), then
+to verify the two charts define a compatible atlas it is required that
+the intersection of their domain open sets be empty ie
+\(S^2 - (0, 0, 1) \cap S^2 - (0, 0, -1) = \emptyset,\) (definitely not
+the case) or
+\(c_s \circ c_n^{-1} : c_n(S^2 - (0, 0, 1) \cap S^2 - (0, 0, -1)) \rightarrow c_s(S^2 - (0, 0, 1) \cap S^2 - (0, 0, -1))\)
+and the opposite (\(c_n \circ c_s^{-1}\)) is diffeomorphic. After
+performing the composition we get:\\
+$(\sage{uu}, \sage{vv})$
+
+    which is homeomorphic and smooth over the specified domain.
+
+    \hypertarget{smooth-functions-between-manifolds}{%
+\subsection{Smooth Functions between
+Manifolds}\label{smooth-functions-between-manifolds}}
+
+A smooth map \(F: M \rightarrow N\) can be described \parencite{lee} as
+\say{if for every \(p \in M\), there exist smooth charts
+\((U, \phi)\) containing \(p\) and \((V, \psi)\) containing \(F(p)\)
+such that \(F(U) \subseteq V\) and the composite map
+\(\psi \circ F \circ \phi^{-1}\) is smooth from \(\phi(U)\) to
+\(\psi(V)\)}.
+
+We will start by defining a manifold E on an ellipsoid to use as the
+destination manifold corresponding to N above for the map. U will then
+correspond to either \(S^2 - (0, 0, 1)\) or \(S^2 - (0, 0, -1)\)
+depending on the source chart selection. N will similarly correspond to
+\(E - (0, 0, 1)\) or \(E - (0, 0, -1)\). Because E uses $ (0, 0, 1)$
+and $(0, 0, -1)$ the a and b ellipse axes are arbitarily defined but
+\(c = 1\) (the z semi-axis) to ensure that the poles are at
+\((0, 0, 1)\) and \((0, 0, -1)\).
+
+\hypertarget{the-ellipsoid-as-a-stereographical-manifold}{%
+\subsubsection{The Ellipsoid as a Stereographical Manifold}\label{the-ellipsoid-as-a-stereographical-manifold}}
+\begin{sagesilent}
+en_0 = cn_0
+en_1 = cn_1
+es_0 = cs_0
+es_1 = cs_1
+var('x', 'y', 'z', 'u', 'v', 'l', 'a', 'b', 'c')
+assume(x, 'real', y, 'real', z, 'real', u, 'real', v, 'real', l, 'real', a, 'real', b, 'real', c, 'real')
+o_n = vector(SR, (0, 0, 1))
+uv = vector(SR, (u, v, 0))
+d = (o_n - uv).normalized()
+Ln = o_n + d*l - vector(SR, (0, 0, 0))
+\end{sagesilent}
+    
+The chart map from the ellipsoid to \(R^2\) can be derived similarly to
+the sphere,resulting in \(u=-\frac{x}{z-1}, v=-\frac{y}{z-1}\) for the
+north chart and \(u=\frac{x}{z+1}, v=\frac{y}{z+1}\), but with \(z\)
+calculated for the ellipse. The inverse is a little more problematic
+however. As with the sphere start by describing the line from the pole
+to the projection in terms of a unit vector pointing in the direction of
+the line:
+\begin{equation}
+\label{eq:ellipsoid-line}
+\scriptstyle
+L = (0, 0, 1) + l \frac{(0, 0, 1) - (u, v, 0)}{|(0, 0, 1) - (u, v, 0)|} = \sage{Ln}
+\end{equation}
+    
+    Recall that a vector equation for an ellipsoid can be
+\href{https://en.wikipedia.org/wiki/Ellipsoid\#In_general_position}{defined}
+as \((\mathbf{x}-\mathbf{o})^{\mathrm{T}} A(\mathbf{x}-\mathbf{o})=1\)
+where \(0\) is the origin coordinates and A is a positive definite
+matrix which in the general case may include rotation, but in our case
+contains only the ellipsoid axes:\\
+\begin{sagesilent}
+A = matrix(SR, 3, 3, [1/a^2, 0, 0,  0, 1/b^2, 0,   0, 0, 1]) # c = 1 to make (0,0,1) possible
+el = Ln.row()*A*Ln
+eq1 = el[0] == 1
+sols = solve(eq1, l)
+\end{sagesilent}
+$\sage{A}$
+    
+The ellipsoid equation is then \(L^T A L\):\\
+$\sage{eq1}$
+    
+with two solutions again with one at 0 corresponding to the pole:\\
+$\sage{sols}$
+    
+Substituting back into \(L\) (Equation \ref{eq:ellipsoid-line}):\\
+\begin{sagesilent}
+solution = the_solution(sols, {u:1, v:1, a:1, b:1})        
+EIn = Ln.substitute(l=solution.rhs())
+en_ix = EIn[0]
+en_iy = EIn[1]
+en_iz = EIn[2]
+
+o_s = vector(SR, (0, 0, -1))
+d = (o_s - uv).normalized()
+Ls = o_s + d*l - vector(SR, (0, 0, 0))
+el = Ls.row()*A*Ls
+eq1 = el[0] == 1
+sols = solve(eq1, l)
+solution = the_solution(sols, {u:1, v:1, a:1, b:1})          
+EIs = Ls.substitute(l=solution.rhs())
+es_ix = EIs[0]
+es_iy = EIs[1]
+es_iz = EIs[2]
+\end{sagesilent}
+$\sage{EIn}$
+    
+Similarly for the south pole we get:\\
+$\sage{EIs}$
+    
+    \hypertarget{defining-the-inter-manifold-function}{%
+\subsection{Defining the Inter-Manifold
+Function}\label{defining-the-inter-manifold-function}}
+\begin{sagesilent}
+T = matrix(SR, 3, 3, [a, 0, 0,  0, b, 0,   0, 0, 1]) 
+ev = vector(SR, (x, y, sqrt(1 - x^2 - y^2)))
+F = T*ev
+Fx = F[0]
+Fy = F[1]
+Fz = F[2]    
+Ellips = F.substitute({x: cn_ix, y: cn_iy})
+# pretty_print(Ellips)
+f1 = en_0.substitute({x:Ellips[0], z:Ellips[2]}).full_simplify()
+f2 = en_1.substitute({y:Ellips[1], z:Ellips[2]}).full_simplify()
+\end{sagesilent}
+
+A linear transformation applied to a sphere results in an ellipse. In
+this case we use a linear transformation matrix:\\
+$\sage{T}$
+
+Applied to $\sage{ev}$  resulting in \(F: S \rightarrow E\) where S is the sphere manifold and E
+is the ellipsoid one:\\
+$F = \sage{F}$
+    
+    Let the ellipse chart be \((V, e_n): V \subset E\) (or
+\((V, e_s): V \subset E\)) and the sphere chart be
+\((U, s_n): U \subset S\) (or \((U, s_s): U \subset S\)), then
+
+\(e_n \circ F \circ s_n^{-1}[s_n(U)]\)
+
+should be a smooth function from \(R^2\) (the stereographic projection
+coordinates for the sphere) to \(R^2\) (the stereographic projection
+coordinates for the ellipse) (its probably best to take Sage's word for
+it unless you \textbf{really} enjoy Algebra):\\
+$\Bigg(\sage{f1}, \sage{f2}\Bigg)$
+    
+    \hypertarget{tangent-vectors-and-spaces}{%
+\subsection{Tangent Vectors and
+Spaces}\label{tangent-vectors-and-spaces}}
+
+Confusingly there are three different approaches to defining tangent
+spaces on manifolds \parencite{montgomery}. These examples will
+cover the geometrically based curve approach and the more algebraic
+derivation approach. 
+
+\subsubsection{Tangent Spaces defined as Equivalence class of Curves}
+ This approach starts with a curve with a domain on an
+interval of \(R^1\) and the manifold \(M\) as the co-domain i.e
+\(\lambda: I \subset R^1 \rightarrow M\). The simplest approach combines the
+co-domain of the curve with a chart map to define curves as being
+tangent at a point \(p\) if \parencite[see][pp. 73]{isham}: 
+\begin{enumerate}
+    \item Values on the manifold correspond ie \(\lambda_{1}(t_0) = \lambda_{2}(t_1) = p\),
+    \item The velocities at the point in a chart are the same ie
+    \((c_n \circ \lambda_{1})^\prime\lvert_{t=t_0} = (c_n \circ \lambda_{2})^\prime\lvert_{t=t_1}\)
+\end{enumerate}
+
+The curve used in the example is a spiral on \(S^2\) (from
+\href{https://math.stackexchange.com/questions/140541/finding-parametric-curves-on-a-sphere}{math.stackexchange})
+
+\(\lambda_1 = (x, y, z): (\sqrt{1-t^{2}} \cos (a \pi t), \sqrt{1-t^{2}} \sin (a \pi t), t)\)
+
+To find the geometric tangent vector at a point we use the north pole
+chart to project a point from the manifold specified by the curve to the
+\(R^2\) Euclidean space of the stereographic projection:\\
+\begin{sagesilent}
+var('s', 't', 'p_4', 'a', 'pt')
+a = 3
+pt = 4/5
+p_4 = pi/a
+K_1 = (sqrt(1-t*t)*cos(7*pi*t), sqrt(1-t*t)*sin(7*pi*t), t)
+T1 = vector(SR, (cn_0.substitute({x:K_1[0], z:K_1[2]}), cn_1.substitute({y:K_1[1], z:K_1[2]})))
+V = T1.diff(t)
+\end{sagesilent}
+As a reminder, the north chart: $(\sage{cn_0}, \sage{cn_1})$\\
+$(c_n \circ \lambda_1) = \sage{T1}$
+    
+Next we differentiate the above to get the tangent vector:\\
+$\scriptstyle \sage{V}$
+    
+Next to find another tangent vector with the necessary properties
+(having the same value in the manifold at \(t\) and equal velocity
+(derivitive) in the chart), we find the inverse of the tangent line in
+the chart which results in a circle in the manifold (\(s\) is the
+parametric variable for the tangent line/circle) 
+$\sage{T1.substitute(t=pt).n(digits=4)} + s \sage{V.substitute(t=pt).n(digits=4)}$:\\
+\begin{sagesilent}
+Tn = T1.substitute(t=pt) + V.substitute(t=pt)*s # Tangent line in projection
+Tm = vector(SR, (cn_ix.substitute(u=Tn[0], v=Tn[1]), cn_iy.substitute(u=Tn[0], v=Tn[1]), cn_iz.substitute(u=Tn[0], v=Tn[1]))).simplify_full()
+\end{sagesilent}
+$\lambda_2 = \sage{Tm}$
+    
+Plotting the results on the manifold (Figure \ref{fig:stereo2}):\\
+\begin{sagesilent}
+Sn = sphere(center=(0, 0, 0),size=1, color='green', aspect_ratio=[1,1,1], opacity=0.7)
+curv_1 = parametric_plot3d(K_1, (t,-1,1), color='red')
+curv_2 = parametric_plot3d(Tm, (s,-1,1), color='blue')
+Pn = (K_1[0].substitute(t=pt).n(), K_1[1].substitute(t=pt).n(), K_1[2].substitute(t=pt).n())
+#Pn = (K_2[0].substitute(t=iss).n(), K_2[1].substitute(t=iss).n(), K_2[2].substitute(t=iss).n())
+pn = point(Pn, rgbcolor=(1,0,0), size=20)
+save(Sn+curv_1+curv_2+pn, "stereo2.png")
+\end{sagesilent}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.95\textwidth,keepaspectratio]{stereo2.png}
+    \caption{Visualization of tangent vector curves}
+    \label{fig:stereo2}
+ \end{figure}
+    
+    Verifying the two curves satisfy the equivalence class criteria:\\
+    \textbf{Value on Manifold}:\\
+    $(\sage{K_1[0].substitute(t=pt).n(digits=7)}, \sage{K_1[1].substitute(t=pt).n(digits=7)}, \sage{K_1[2].substitute(t=pt).n(digits=7)})$\\
+    $(\sage{Tm.substitute(s=0).n(digits=7)})$\\
+    \textbf{Velocity in chart}:\\
+    $\sage{V.substitute(t=pt).n(digits=7)}$\\
+    $\sage{Tn.diff(s).substitute(s=0).n(digits=7)}$\\
+    
+    \hypertarget{derivation-based-approach}{%
+\subsection{Derivation based Approach}\label{derivation-based-approach}}
+
+A derivation at a point in a \(C^\infty\) manifold is defined to be a
+linear map \(D(C^\infty) \rightarrow R\),
+
+\((D_{1}+D_{2})(f) = D_{1}(f)+D_{2}(f)\)
+
+\((\lambda D)(f) = \lambda D(f)\) which also obeys the Leibnitz identity
+\(D(f g)=D(f) \cdot g(x)+f(x) \cdot D(g)\).
+
+Computer science types could see the derivation as defining an abstract
+interface, with the actual derivitive being a concrete class
+implementing the abstract interface.
+
+See \textcite{parzygnat} (lecture 12 part 3) for a description of
+derivations and associated associative algebra (in a Euclidean manifold
+context, but most of what is covered also applies to general manifolds,
+other than the manifold chart map directions are inverted).
+
+A tangent vector can then be applied to a \(C^\infty\) function \(f\) given a curve \(\lambda\) by
+\(D(f \circ \lambda)[t]\) where \(\lambda(t) = \vec{p} \in M\) where \(\vec{p}\) is the point in
+the manifold where the tangent is taken. The derivation based velocities defined this way should
+form a vector space similarly to the previous section tangent vectors which can fairly easily be
+shown to form a vector space by adding/multiplying in chart space \parencite[see][pp. 76]{isham} .
+Proving a vector space using the \(D(f \circ \lambda)[t]\) approach is a little more difficult.
+Additive closure is covered quite lengthily in lesson 9 of \textcite{XylyXylyX} and more concisely
+by \textcite{schuller} lecture 5, while Schuller also covers scalar multiplication.
+
+The above proofs are regurgitated here for documentary purposes as I
+couldn't find a book containing the proofs. Intermediate results in the
+proofs are also illustrated using the stereographic example.
+
+Multivariable differentation is denoted, as for derivations, with a \(D\) operator. For
+multivariable functions and maps the differentation result will be a Jacobian, and in many cases
+with tangent spaces mapping to \(R^1\) will be vectors, although transition maps between charts for
+example will be matrices. In some cases the differention operator \(D\) will be subscripted with
+the variables w.r.t. which the differentiation is taking place eg \(D_t\). This is in contrast with
+many physics books which use the old fashioned multiple different chain rules to extensively
+utilize component indexing, instead of one chain rule using linear transformations with Jacobian
+matrices applying in all cases (as for example in \textcite{spivak} or more colorfully in
+\textcites{ghrist}{ghrist-youtube}). Where applicable the comparable `standard' notation will also
+be shown.
+
+We will continue to use the curves defined in the previous section. We
+also define \(f(\vec{p}) : S \rightarrow R = 2x + 2y + 2z\) (where z is
+constrained to be on the manifold ie \(z = \sqrt{1 - x^2 - y^2}\)). Now
+\(D(f \circ \lambda_1)\) and \(D(f \circ \lambda_2)\) are velocities:\\
+\begin{sagesilent}
+var('x', 'y', 'z')
+f = 2*x + 2*y + 2*z
+d1 = f.substitute(x = K_1[0], y = K_1[1], z = K_1[2]).diff(t)
+d2 = f.substitute(x = Tm[0], y = Tm[1], z = Tm[2]).diff(s) #.full_simplify()
+#print(latex(d2)) # Manually split the output
+\end{sagesilent}
+
+$\scriptstyle (f \circ \lambda_1)^\prime = \sage{d1}$
+\begin{multline*}
+    \scriptstyle
+    (f \circ \lambda_2)^\prime = 
+    \frac{4 \, {({(3969 \, \pi^{2} + 625)} s + 225)}}{{(3969 \, \pi^{2} + 625)} s^{2} + 450 \, s + 90} - 
+    \frac{4 \, {({(3969 \, \pi^{2} + 625)} s^{2} + 450 \, s + 72)} {({(3969 \, \pi^{2} + 625)} s + 225)}}{{({(3969 \, \pi^{2} + 625)} s^{2} + 450 \, s + 90)}^{2}} -\\
+    \scriptstyle
+    \frac{6 \, {(63 \, \pi s {(\sqrt{5} - 1)} - {(25 \, s + 9)} \sqrt{2 \, \sqrt{5} + 10})} {({(3969 \, \pi^{2} + 625)} s + 225)}}{{({(3969 \, \pi^{2} + 625)} s^{2} + 450 \, s + 90)}^{2}} - 
+    \frac{6 \, {(63 \, \pi s \sqrt{2 \, \sqrt{5} + 10} + 25 \, s {(\sqrt{5} - 1)} + 9 \, \sqrt{5} - 9)} {({(3969 \, \pi^{2} + 625)} s + 225)}}{{({(3969 \, \pi^{2} + 625)} s^{2} + 450 \, s + 90)}^{2}} +\\ 
+    \scriptstyle
+    \frac{3 \, {(63 \, \pi {(\sqrt{5} - 1)} - 25 \, \sqrt{2 \, \sqrt{5} + 10})}}{{(3969 \, \pi^{2} + 625)} s^{2} + 450 \, s + 90} +
+    \frac{3 \, {(63 \, \pi \sqrt{2 \, \sqrt{5} + 10} + 25 \, \sqrt{5} - 25)}}{{(3969 \, \pi^{2} + 625)} s^{2} + 450 \, s + 90}
+\end{multline*}
+    
+    To demonstrate the curves form a vector space (for this example anyway), before providing a proof (of closure under addition and scalar multiplication
+    - the rest is left as an exercise for the reader \smiley{}) we first set  $\lambda_3 = \lambda_1 + \lambda_2$ and then substituting the values for the 
+    intersection point specified by $s = 0$ and $t = \frac{4}{5}$ into the three different velocities.\\
+\begin{sagesilent}
+K_3 = vector(SR, ( (K_1[0] + Tm[0]).full_simplify(), (K_1[1] + Tm[1]), (K_1[2] + Tm[2]) ) ).simplify_full()
+d3 = f.substitute(x = K_3[0], y = K_3[1], z = K_3[2]).diff(s).full_simplify()
+\end{sagesilent}   
+$(D(f \circ \lambda_1)[\sage{pt}] = \sage{d1.substitute(t=pt).n(digits=7)}$\\
+$(D(f \circ \lambda_2)[0] = \sage{d2.substitute(s=0).n(digits=7)}$\\
+$(D(f \circ \lambda_3)[\sage{pt}] = \sage{d3.substitute(s=0, t=pt).n(digits=7)}$\\
+% \begin{multline*}
+% \scriptscriptstyle
+% \lambda_3 = -\frac{750141 \, \sqrt{5} \pi^{3} s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{750141 \, \pi^{3} s^{2} \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\
+% \scriptscriptstyle \frac{750141 \, \pi^{3} s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\
+% \scriptscriptstyle \frac{297675 \, \sqrt{5} \pi^{2} s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{297675 \, \pi^{2} s^{2} \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{297675 \, \pi^{2} s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{214326 \, \sqrt{5} \pi^{2} s}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{118125 \, \sqrt{5} \pi s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{214326 \, \pi^{2} s \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{118125 \, \pi s^{2} \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\
+% \scriptscriptstyle \frac{500094 \, \pi^{2} s}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\
+% \scriptscriptstyle \frac{118125 \, \pi s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{46875 \, \sqrt{5} s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{46875 \, s^{2} \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{46875 \, s^{2}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{17010 \, \sqrt{5} \pi}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{33750 \, \sqrt{5} s}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{17010 \, \pi \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{33750 \, s \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{17010 \, \pi}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{78750 \, s}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} -\\ 
+% \scriptscriptstyle \frac{5400 \, \sqrt{5}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{5400 \, \sqrt{2 \, \sqrt{5} + 10}}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100} +\\ 
+% \scriptscriptstyle \frac{21600}{15752961 \, \pi^{4} s^{4} + 4961250 \, \pi^{2} s^{4} + 3572100 \, \pi^{2} s^{3} + 714420 \, \pi^{2} s^{2} + 390625 \, s^{4} + 562500 \, s^{3} + 315000 \, s^{2} + 81000 \, s + 8100}
+% \end{multline*}
+
+    \hypertarget{additive-closure-proof}{%
+\subsubsection{Additive Closure Proof}\label{additive-closure-proof}}
+
+The proof starts with a construction, which given two existing curves
+\(\lambda_1,\lambda_2\) intersecting at point \(\vec{p}\) at parameter
+values \(t_1\) and \(t_2\), constructs a third curve \(\lambda_3\) also
+intersecting \(\vec{p}\) at a parameter \(t_3\) ie
+\(\lambda_1(t_1) = \lambda_2(t_2) = \lambda_3(t_3) = \vec{p}\):
+
+\(\lambda_3(t) = c^{-1}\{ (c \circ \lambda_1)[t_1 + t] + (c \circ \lambda_2)[t_2 + t] - (c \circ \lambda_1)[t_1]\}\)
+
+At \(t = 0\) this evaluates to
+\(c^{-1}\{ c(\vec{p}) + c(\vec{p}) - c(\vec{p}) \} = c^{-1}(c(\vec{p})) = \vec{p}\)
+so \(t_3 = 0\). Checking this construct results in the same values as
+the other two curves:\\
+\begin{sagesilent}
+t1 = vector(SR, (cn_0.substitute(x=K_1[0], z=K_1[2]).substitute(t=t+pt), cn_1.substitute(y=K_1[1], z=K_1[2]).substitute(t=t+pt)))
+t2 = vector(SR, (cn_0.substitute(x=Tm[0], z=Tm[2]), cn_1.substitute(y=Tm[1], z=Tm[2]))).substitute(s=t+0)
+t3 = vector(SR, (cn_0.substitute(x=K_1[0], z=K_1[2]), cn_1.substitute(y=K_1[1], z=K_1[2]))).substitute(t=pt)
+tt = t1 + t2 - t3
+K3 = vector(SR, (cn_ix.substitute(u=tt[0], v=tt[1]), cn_iy.substitute(u=tt[0], v=tt[1]), cn_iz.substitute(u=tt[0], v=tt[1]))).simplify_full()
+\end{sagesilent}
+$\textbf{Value on Manifold:}~~" \sage{K3.substitute(t=0).n(digits=7)}$
+    
+    Because the third curve parameter \(t_3\) evaluates to 0, we can
+therefore write the velocity vector for \(\lambda_3\) at \(\vec{p}\) as
+\((f \circ \lambda_3)^\prime[t_3 = 0]\).
+
+Inserting a chart and its inverse and using associativity results in
+
+\(\{(f \circ c^{-1}) \circ (c \circ \lambda_3)\}^\prime[0]\).
+
+Using the chain rule with the \(f \circ c^{-1}\) as the outer function:
+
+\(D(f \circ c^{-1})[(c \circ \lambda_3)[0])~D(c \circ \lambda_3)[0]\)
+
+Substituting the expression for \(\lambda_3\) into the right side term:
+
+\(D(c \circ \lambda_3)[0] = D(c \circ c^{-1}\{ (c \circ \lambda_1)[t_1 + t] + (c \circ \lambda_2)[t_2 + t] - (c \circ \lambda_1)[t_1]\}) =\)
+
+\(D((c \circ c^{-1} \circ c \circ \lambda_1))[t_1 + t] + (c \circ c^{-1} \circ c \circ \lambda_2)[t_2 + t]) - (c \circ c^{-1} \circ c \circ \lambda_1))[t_1])\)
+(distributivity, associativity)
+
+The third term is not dependent on \(t\) so the derivitive would be
+\(0 \therefore\) is will disappear and the inner \(c^{-1} \circ c\) in
+the other terms will cancel leaving:
+
+\(D((c \circ \lambda_1))[t_1 + t] + (c \circ \lambda_2)[t_2 + t]))[0] = D(c \circ \lambda_1)[t_1] + D(c \circ \lambda_2)[t_2]\)
+
+    The left hand term can also be simplified:
+
+\(D(f \circ c^{-1})[(c \circ \lambda_3)[0]) \equiv D(f \circ c^{-1})[(c \circ \lambda_3[0])) = D(f \circ c^{-1})[c(\vec{p})]\)
+
+as \(\lambda_3[0] = \vec{p}\) by construction.
+
+Recombining the simplified left and right sides:
+
+\begin{equation}
+\label{eq:addition-close}    
+\scriptstyle
+D(f \circ c^{-1})[c(\vec{p})] \cdot (D(c \circ \lambda_1)[t_1] + D(c \circ \lambda_2)[t_2]) = D(f \circ c^{-1})[c(\vec{p})] D(c \circ \lambda_1)[t_1] + D(f \circ c^{-1})[c(\vec{p})] D(c \circ \lambda_2)[t_2])
+\end{equation}
+
+Using the chain rule to differentiate \(D(f \circ \lambda_1)[t_1]\) to show that it is the same as the first term above:
+
+\(D(f \circ \lambda_1)[t_1] = D((f \circ c^{-1}) \circ (c \circ \lambda_1))[t_1] =\)
+
+\(D(f \circ c^{-1})[(c \circ \lambda_1)[t_1]] \cdot D(c \circ \lambda_1)[t_1] =\)
+
+\(D(f \circ c^{-1})[(c(\vec{p})] \cdot D(c \circ \lambda_1)[t_1]\)
+
+which is the first term in the previous expression (Equation \ref{eq:addition-close}) (combining the
+simplified left and right sides).
+
+Similarly the second term
+\(D(f \circ c^{-1})[c(\vec{p})] D(c \circ \lambda_2)[t_2])\) can be
+shown by reversing the chain rule to be
+\(D(f \circ \lambda_2)[t_2] \therefore\) the equation that shall remain
+unnumbered can be reduced to:
+
+\(D(f \circ \lambda_1)[t_1] + D(f \circ \lambda_2)[t_2]\)
+
+which proves closure under addition of velocity vectors in the tangent space. We can verify the above terms for our concrete example:\\
+\begin{sagesilent}
+fl1 = f.substitute(x=K_1[0], y=K_1[1], z=K_1[2]).simplify_full()
+fl2 = f.substitute(x=Tm[0], y=Tm[1], z=Tm[2]).simplify_full()
+fl3 = f.substitute(x=K3[0], y=K3[1], z=K3[2]).simplify_full()
+vv1 = fl1.diff(t).substitute(t=pt).n(digits=7)
+vv2 = fl2.diff(s).substitute(s=0).n(digits=7)
+vv3 = fl3.diff(t).substitute(t=0).n(digits=7)
+\end{sagesilent}
+$f \circ \lambda_{1,2,3} = \sage{fl1.substitute(t=pt).n(digits=7)}, \sage{fl2.substitute(s=0).n(digits=7)}, \sage{fl3.substitute(t=0).n(digits=7)}$\\
+$D(f \circ \lambda_1) + D(f \circ \lambda_2) = \sage{vv1} + \sage{vv2} = \sage{vv1+vv2} = D(f \circ \lambda_3) = \sage{vv3}$
+    
+\hypertarget{scalar-multiplication-closure}{%
+\subsubsection{Scalar Multiplication
+Closure}\label{scalar-multiplication-closure}}
+
+Proving closure under scalar multiplication is easier and does not
+involve any charts. Again start with a construction for the new curve
+\(\lambda_3\) tangent at \(\vec{p}\) ie
+\(\lambda_1(t_1) = \lambda_3(t_3) = \vec{p}\) in terms of \(\lambda_1\):
+
+\(\lambda_3(t) = \lambda_1(a t + t_1) = (\lambda_1 \circ u_a)[t_3]~~a \in R,~u_a(t) :R \rightarrow R = a t + t_1\)
+
+At \(t = 0\) this evaluates to
+\(\lambda_3(0) = \lambda_1(0 \cdot a + t_1) = \lambda_1(t_1) = \vec{p}\)
+so \(t_3 = 0\).
+
+\(D(f \circ \lambda_3)[t_3] = D(f \circ \lambda_3)[0] = D((f \circ \lambda_1) \circ u_a)[0]\)
+
+Applying the chain rule:
+
+\(D(f \circ \lambda_1)[u_a(0)] \cdot D(u_a)[0] = D(f \circ \lambda_1)[t_1] \cdot a = a D(f \circ \lambda_1)[t_1]\)
+
+which proves closure under scalar multiplication.
+
+    \hypertarget{chart-realizations-for-tangent-space}{%
+\subsection{Chart Realizations for Tangent
+Space}\label{chart-realizations-for-tangent-space}}
+
+We start by introducing a chart \(c\) into a velocity vector applied to
+an arbitrary function \(f\) for a curve
+\(\lambda(t_1) = \vec{p} \in U \subseteq M\):
+
+\(D((f \circ c^{-1}) \circ (c \circ \lambda))[t_1]\)
+
+Applying the chain rule once again:
+
+\(D_{u,v}(f \circ c^{-1})[c \circ \lambda(t_1)] \cdot D_t(c \circ \lambda)[t_1] = D_t(c \circ \lambda)[t_1] \cdot D_{u,v}(f \circ c^{-1})[c(\vec{p})]\)
+
+The representation of derivation based tangent space vectors w.r.t
+charts as used above in the proofs is quite complicated, so a simplified
+representation, otherwise known as syntactic sugar in the computer
+science community, is conventionally used, particularly in Physics,
+which is shown here along with an example.
+
+We start by investigating what the left and right hand sides of the
+above look like for a concrete example using the north chart of the
+stereographic projection and the spiral curve on the sphere. To do this
+we take the Jacobian of both sides and then do matrix multiplication (or
+dot product as they are both vectors) on the jacobians:\\
+\begin{sagesilent}
+t1 = vector(SR, (cn_0.substitute(x=K_1[0], z=K_1[2]), cn_1.substitute(y=K_1[1], z=K_1[2])))
+lhs = jacobian(t1, (t)).transpose()
+
+_pp = vector(SR, (cn_0.substitute(x=Pn[0], z=Pn[2]), cn_1.substitute(y=Pn[1], z=Pn[2])))
+_f = f.substitute(x=cn_ix, y=cn_iy, z=cn_iz).simplify_full()
+rhs = jacobian(_f, [u,v])
+res = (lhs.substitute(t=pt)*rhs.transpose().substitute({u:_pp[0], v:_pp[1]})).n(digits=6)
+\end{sagesilent}
+\begin{multline*}
+    \scriptstyle LHS = 
+\left(\begin{array}{rr}
+    \scriptstyle 
+    \frac{7 \, \pi \sqrt{-t^{2} + 1} \sin\left(7 \, \pi t\right)}{t - 1} + \frac{t \cos\left(7 \, \pi t\right)}{\sqrt{-t^{2} + 1} {\left(t - 1\right)}} + \frac{\sqrt{-t^{2} + 1} \cos\left(7 \, \pi t\right)}{{\left(t - 1\right)}^{2}} & -\frac{7 \, \pi \sqrt{-t^{2} + 1} \cos\left(7 \, \pi t\right)}{t - 1} +\\ 
+    \frac{t \sin\left(7 \, \pi t\right)}{\sqrt{-t^{2} + 1} {\left(t - 1\right)}} + \frac{\sqrt{-t^{2} + 1} \sin\left(7 \, \pi t\right)}{{\left(t - 1\right)}^{2}}
+    \end{array}\right)
+    \Big[t = \sage{pt} \Big]
+\end{multline*}
+
+$\scriptstyle RHS = \sage{rhs.transpose()}\Big[(u,v) = \sage{_pp.n(digits=6)} \Big]$
+    
+The right hand side of the expression is simplified as follows: 
+\begin{enumerate}[itemsep=1pt, topsep=1pt, partopsep=0pt]
+    \item As the derivative is being taken Leibnitz notation is used (odd - one would have thought physicists would prefer Newton), the D is replaced with a
+    del ie \(\partial\),
+    \item The function is used in the numerator and the chart is used in the denominator in the Leibnitz notation for differentiation 
+    i.e.~\(\frac{\partial f}{\partial c}\),
+    \item The coordinate index of the component being differentiated in the vector is used as a superscript in the denominator (the use of vectors and
+    matrices was implied in the Jacobian differentiation operator used in most of this document) \(\frac{\partial f}{\partial c^i}\),
+    \item Finally the point on the manifold is given as a subscript i.e \((\frac{\partial f}{\partial c^i})_p\).
+\end{enumerate}
+       
+The left hand side is also simplified: 
+\begin{enumerate}[itemsep=1pt, topsep=1pt, partopsep=0pt]
+    \item As the curve is being differentiated with respect to a parameter which can be interpreted as time, Newton finally arrives on the scene, 
+    with the Newtonian notation with a dot on top of the curve being used i.e.~\(\dot \lambda\),
+    \item As with the RHS the component index is used as a superscript (which also ties in with using Einstein summation for the entire expression)
+    i.e.~\(\dot \lambda^i\),
+    \item The curve is used as a subscript ie \(\dot \lambda^i_c\) 4. Finally the point in the manifold is added i.e.~\(\dot \lambda^i_c(t_1)\)
+\end{enumerate}    
+
+The entire shorthand expression for a component is expressed as an operator which operates on
+\(C^\infty\) functions: \(\dot \lambda^i_c(t_1) (\frac{\partial }{\partial c^i})_pf\)
+
+The \((\frac{\partial }{\partial c^i})_p\) part (or more accurately its full expansion) forms a
+basis for the vector space of derivations defining the tangent space.
+\Textcite[see][pp.~82-86]{isham} provides a proof of this as well as the isomorphism between the
+derivation and the previously described geometric tangent space. This basis is known as a chart
+induced basis.
+
+The example shows the basis dependent on \(u,v\) and the components on
+\(t\):\\
+\begin{multline*}
+    \left(\begin{array}{r}
+        \scriptstyle
+        4 \, {\left(\frac{7 \, \pi \sqrt{-t^{2} + 1} \sin\left(7 \, \pi t\right)}{t - 1} + \frac{t \cos\left(7 \, \pi t\right)}{\sqrt{-t^{2} + 1} {\left(t - 1\right)}} + \frac{\sqrt{-t^{2} + 1} \cos\left(7 \, \pi t\right)}{{\left(t - 1\right)}^{2}}\right)} {\left(\frac{u + 1}{u^{2} + v^{2} + 1} - \frac{{\left(u^{2} + v^{2} + 2 \, u + 2 \, v - 1\right)} u}{{\left(u^{2} + v^{2} + 1\right)}^{2}}\right)} -\\
+        \scriptstyle
+        4 \, {\left(\frac{7 \, \pi \sqrt{-t^{2} + 1} \cos\left(7 \, \pi t\right)}{t - 1} - \frac{t \sin\left(7 \, \pi t\right)}{\sqrt{-t^{2} + 1} {\left(t - 1\right)}} - \frac{\sqrt{-t^{2} + 1} \sin\left(7 \, \pi t\right)}{{\left(t - 1\right)}^{2}}\right)} {\left(\frac{v + 1}{u^{2} + v^{2} + 1} - \frac{{\left(u^{2} + v^{2} + 2 \, u + 2 \, v - 1\right)} v}{{\left(u^{2} + v^{2} + 1\right)}^{2}}\right)}
+        \end{array}\right)
+        = \sage{res[0]}
+\end{multline*}    
+    
+\hypertarget{change-of-basis-for-tangent-space-components}{%
+\subsection{Change of basis for Tangent Space
+Components}\label{change-of-basis-for-tangent-space-components}}
+
+Given two charts \((U, c_1)\) and \((V, c_2)\) where
+\(U \cap V \neq \emptyset\), where the tangent vector to a point
+\(\vec{p} \in U,V\) is known relative to say \(U\), then the equivalent
+basis vector for \(V\) can be derived:
+
+\begin{enumerate}[itemsep=1pt, topsep=1pt, partopsep=0pt]
+\item
+  Recall the expression for the basic component from the previous
+  section and once again apply the idiom of using the inverse of a map
+  after the map, in this case the map being the chart from \(V\).
+  \((\frac{\partial f}{\partial c_1^{i:1\cdots m}})_p = D(f \circ c_1^{-1})[c_1(\vec{p})] = D((f \circ c_2^{-1}) \circ (c_2 \circ c_1^{-1})[c_1(\vec{p})]\)
+\item
+  Utilise the chain rule again:
+  \(D_{u,v}(f \circ c_2^{-1})[c_2 \circ c_1^{-1}(c_1(\vec{p})] \cdot D_{u,v}(c_2 \circ c_1^{-1})[c_1(\vec{p})] = D_{u,v}(c_2 \circ c_1^{-1})[c_1(\vec{p})] \cdot D_{u,v}(f \circ c_2^{-1})[c_2(\vec{p})]\).
+\item
+  The full expression for the tangent vector in \(U\) is given by:
+  \(\dot \lambda^i_{c_1}(t_1) (\frac{\partial f}{\partial c_1^{i:1\cdots m}})_p = D(c_1 \circ \lambda)[t_1] \cdot D(f \circ c^{-1}_1)[c_1(\vec{p})]\)
+  Substituting the expression from 2:
+  \(D(c_1 \circ \lambda)[t_1] \cdot D(f \circ c^{-1})[c(\vec{p})] = D_t(c_1 \circ \lambda)[t_1] \cdot D_{u,v}(c_2 \circ c_1^{-1})[c_1(\vec{p})] \cdot D_{u,v}(f \circ c_2^{-1})[c_2(\vec{p})]\)
+\item
+  The full expression for the tangent vector in \(V\) is given by:
+  \(\dot \lambda^i_{c_2}(t_2) (\frac{\partial f}{\partial c_2^{i:1\cdots n}})_p = D(c_{2} \circ \lambda)[t_2] \cdot D(f \circ c^{-1}_{2})[c_2(\vec{p})]\)
+\item
+  As the curve on the manifold remains the same, the tangent vector is
+  also the same, its just expressed differently in the two bases,
+  therefore these expressions can be equated:
+  \(D_t(c_{2} \circ \lambda)[t_2] \cdot D_{u,v}(f \circ c^{-1}_{2})[c_2(\vec{p})] = D_t(c_1 \circ \lambda)[t_1] \cdot D_{u,v}(c_2 \circ c_1^{-1})[c_1(\vec{p})] \cdot D_{u,v}(f \circ c_2^{-1})[c_2(\vec{p})]\)
+  The components in V are thus
+  \(D_t(c_1 \circ \lambda)[t_1] \cdot D_{u,v}(c_2 \circ c_1^{-1})[c_1(\vec{p})]\)
+\end{enumerate}
+
+The \(D_{u,v}(c_2 \circ c_1^{-1})[c_1(\vec{p})]\) (Jacobian of the
+overlap function between \(U\) and \(V\)) is \(R^m \rightarrow R^n\) so
+the Jacobian will be a \(n{\times}m\) matrix. This matrix is multiplied
+by a \(m{\times}1\) vector of the map from the curve to chart
+coordinates via the manifold.
+
+Applying this to the example using a change of basis from the north to
+the south hemisphere of the stereographic projection (the point at which
+the tangent are found is the northern hemisphere test point, and the
+curve is the same as the one used in the previous tangent space
+examples):\\
+\begin{sagesilent}
+pp1 = vector(SR, (cn_0.substitute(x=Pn[0], z=Pn[2]), cn_1.substitute(y=Pn[1], z=Pn[2])))
+pp2 = vector(SR, (cs_0.substitute(x=Pn[0], z=Pn[2]), cs_1.substitute(y=Pn[1], z=Pn[2])))
+fc2 = f.substitute(x=cs_ix, y=cs_iy, z=cs_iz).simplify_full()
+c2c1 = vector(SR, (cs_0.substitute({x: cn_ix, z: cn_iz}).full_simplify(), cs_1.substitute({y: cn_iy, z: cn_iz}).full_simplify()))
+c1l = vector(SR, (cn_0.substitute(x=K_1[0], z=K_1[2]), cn_1.substitute(y=K_1[1], z=K_1[2])))
+
+Dc2c1 = jacobian(c2c1, (u, v))
+Dc1l = jacobian(c1l, (t))
+pretty_print(Dc2c1, LatexExpr("\\cdot"), Dc1l, LatexExpr("~=~"), Dc2c1*Dc1l)
+pretty_print(Dc2c1.substitute(u=pp1[0], v=pp1[1]).n(digits=7), LatexExpr("\\cdot"), Dc1l.substitute(t=float(pt)).n(digits=7), LatexExpr("~=~"), (Dc2c1.substitute(u=pp1[0], v=pp1[1])*Dc1l.substitute(t=float(pt))).n(digits=7))    
+\end{sagesilent}
+% \begin{multline*}
+% \scriptstyle 
+% \sage{Dc2c1} \cdot \sage{Dc1l} =\\
+% \sage{(Dc2c1.substitute(u=pp1[0], v=pp1[1])*Dc1l.substitute(t=float(pt))).n(digits=7)}
+% \end{multline*}
+
+\begin{multline*}
+    \hspace{-1.6cm}
+    \medmuskip=2mu
+    \scriptstyle 
+    \sage{Dc2c1} \cdot \sage{Dc1l}[t=\sage{float(pt)}] = \\
+    \scriptstyle \sage{(Dc2c1*Dc1l.substitute(t=pt))}
+\end{multline*}
+
+\begin{multline*}
+    \hspace{-1.6cm}
+    \medmuskip=2mu
+    \scriptstyle \sage{(Dc2c1*Dc1l.substitute(t=pt))}\Big[\begin{array}{c} u = \sage{pp1[0].n(digits=5)} \\ v = \sage{pp1[1].n(digits=5)}\end{array}\Big] =\\
+    \scriptstyle \sage{(Dc2c1.substitute(u=pp1[0], v=pp1[1])*Dc1l.substitute(t=float(pt))).n(digits=7)}
+\end{multline*}
+    
+    We can test the change of basis by calculating the component representation in the south chart directly:\\
+\begin{sagesilent}    
+lhss = vector(SR, (cs_0, cs_1))
+lhs = jacobian(vector(SR, (cs_0.substitute(x=K_1[0], z=K_1[2]), cs_1.substitute(y=K_1[1], z=K_1[2]))), (t)).transpose()
+\end{sagesilent}  
+\begin{multline*}
+    \hspace{-1.6cm}
+    \medmuskip=2mu  
+    D_{x,y,z}\sage{lhss}\Big[\begin{array}{c} x = \sage{K_1[0]} \\ y = \sage{K_1[1]} \\ z = \sage{K_1[2]}\end{array}\Big] =\\ 
+    \hspace{-1.6cm}
+    \scriptstyle \sage{lhs}\big[t=\sage{float(pt)}\big] =\\ 
+    \scriptstyle \sage{lhs.substitute(t=pt).n(digits=6)}
+\end{multline*}    
+    
+Most (physics) textbooks use a shorthand notation for \(D_{u,v}(c_2 \circ c_1^{-1})[c_1(\vec{p})]
+\cdot D_t(c_1 \circ \lambda)[t_1]\), namely \(\frac{\partial c_2^j}{\partial c_1^i} \cdot
+X^i_{c_1}\) where the \(\frac{\partial c_2^j}{\partial c_1^i}\) refers to the Jacobian matrix with
+the superscript indices corresponding to rows and columns from the matrix, while the \(X^i_{c_1}\)
+term is a generic reference to the components in the convert-from chart minus any curve
+information. 
+
+\printbibliography    
+\end{document}

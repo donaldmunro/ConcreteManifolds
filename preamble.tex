@@ -1,0 +1,99 @@
+\usepackage{sagetex}
+\usepackage{amssymb,amsmath,mathtools,txfonts}
+\usepackage[a4paper]{geometry}
+\usepackage{parskip}
+\setlength{\parindent}{15pt}
+\usepackage[english]{babel}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\microtypecontext{spacing=nonfrench}
+\usepackage[compact]{titlesec}
+% \usepackage{enumitem}
+% \setlist{nosep}
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage[ backend=biber,
+             style=authoryear,
+             maxcitenames=2,
+             mincitenames=1,
+             maxnames=2,
+             maxbibnames=100,
+             hyperref=true,
+             uniquename=false,
+             backref=true,
+             date=iso,
+             seconds=true,
+             dashed=false
+           ]
+            {biblatex}
+\addbibresource{bibliography.bib}
+\renewbibmacro{in:}{}
+\setcounter{biburlnumpenalty}{100}
+\setcounter{biburlucpenalty}{100}
+\setcounter{biburllcpenalty}{100}
+\DeclareNameAlias{author}{last-first}
+\renewcommand*{\nameyeardelim}{\addcomma\space}
+\DeclareFieldFormat[inbook]{citetitle}{#1}
+\DeclareFieldFormat[inbook]{title}{#1}
+\DeclareFieldFormat[inproceedings]{citetitle}{#1}
+\DeclareFieldFormat[inproceedings]{title}{#1}
+\DeclareFieldFormat[incollection]{citetitle}{#1}
+\DeclareFieldFormat[incollection]{title}{#1}
+\DeclareFieldFormat[article]{citetitle}{#1}
+\DeclareFieldFormat[article]{title}{#1}
+% \DeclareFieldFormat[article, inbook, incollection, inproceedings, misc, thesis, unpublished]{title}{#1}
+\DeclareFieldFormat[article]
+{volume}{ {vol. #1} }
+%-- puts number/issue between brackets
+\DeclareFieldFormat[article, inbook, incollection, inproceedings, misc, thesis, unpublished]
+{number}{no. #1}
+% {number}{\mkbibparens{#1}}
+%-- and then for articles directly the pages w/o any "pages" or "pp."
+\DeclareFieldFormat[article]
+{pages}{ pp. #1}
+%-- for some types replace "pages" by "p."
+\DeclareFieldFormat[inproceedings, incollection, inbook]
+{pages}{ pp. #1}
+%-- format 16(4):224--225 for articles
+\renewbibmacro*{volume+number+eid}{
+  \printunit{\addcomma} %%% Added
+  \printfield{volume}
+  \printfield{number}
+  % \printunit{\addcolon}
+}
+\DefineBibliographyStrings{english}{%
+    backrefpage  = {\lowercase{c}ited on: p.}, % for single page number
+    backrefpages = {\lowercase{c}ited on pp.} % for multiple page numbers
+}
+%-- citations with square brackets (== \usepackage[square]{natbib})
+\makeatletter
+\newrobustcmd*{\parentexttrack}[1]{
+  \begingroup
+  \blx@blxinit%
+  \blx@setsfcodes%
+  \blx@bibopenparen#1\blx@bibcloseparen%
+  \endgroup}
+\AtEveryCite{
+  \let\parentext=\parentexttrack%
+  \let\bibopenparen=\bibopenbracket%
+  \let\bibcloseparen=\bibclosebracket}
+\makeatother
+
+\usepackage[most]{tcolorbox}
+\tcbset{
+    frame code={}
+    center title,
+    left=0pt,
+    right=0pt,
+    top=0pt,
+    bottom=0pt,
+    colback=gray!70,
+    colframe=white,
+    width=\dimexpr\textwidth\relax,
+    enlarge left by=0mm,
+    boxsep=5pt,
+    arc=0pt,outer arc=0pt,
+    }
+\usepackage{enumitem}   
+\usepackage{dirtytalk}
+\usepackage{wasysym}
+% \usepackage{breqn}
