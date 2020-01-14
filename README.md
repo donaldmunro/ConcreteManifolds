@@ -12,3 +12,5 @@ Sage (although you lose the ability to interact with the content including the g
 as the intention is to provide examples from first principles. Errors or misunderstandings on my part or also more than likely as I am a computer scientist who 
 dabbles in mathematics for Computer Vision, Machine Learning and Neural Networks, therefore any error corrections or suggestions 
 for improvements would also be welcome.
+
+A HTML web export of the notebook is [also available](https://donaldmunro.github.io/ConcreteManifolds.html).
